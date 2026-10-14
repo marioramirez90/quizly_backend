@@ -2,6 +2,7 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
@@ -48,6 +49,6 @@ class LoginSerializer(serializers.Serializer):
             password=attrs.get('password')
         )
         if not user:
-            raise serializers.ValidationError('Invalid credentials.')
+            raise AuthenticationFailed('Invalid credentials.')
         attrs['user'] = user
         return attrs

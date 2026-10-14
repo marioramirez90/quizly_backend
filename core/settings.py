@@ -138,7 +138,7 @@ MAILERS = {
 }
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'auth_app.authenticate.CookieJWTAuthentication',
+        'auth_app.api.authenticate.CookieJWTAuthentication',
     ),
 }
 
