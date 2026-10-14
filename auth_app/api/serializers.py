@@ -1,4 +1,5 @@
-"""Serializers for authentication handling registration and user responses."""
+"""Serializers for authentication handling registration, login, and user details."""
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
@@ -33,3 +34,20 @@ class RegisterSerializer(serializers.ModelSerializer):
         """Create and return a new User record with hashed password."""
         validated_data.pop('confirmed_password')
         return User.objects.create_user(**validated_data)
+
+
+class LoginSerializer(serializers.Serializer):
+    """Validate login credentials and authenticate user."""
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        """Authenticate user against provided credentials."""
+        user = authenticate(
+            username=attrs.get('username'),
+            password=attrs.get('password')
+        )
+        if not user:
+            raise serializers.ValidationError('Invalid credentials.')
+        attrs['user'] = user
+        return attrs
