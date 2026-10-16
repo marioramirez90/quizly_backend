@@ -9,6 +9,7 @@ from quiz_app.models import Question, Quiz
 
 
 def download_audio_from_youtube(url, target_dir):
+    """Download the audio track from a YouTube URL into the target directory."""
     output_template = os.path.join(target_dir, '%(id)s.%(ext)s')
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -22,12 +23,14 @@ def download_audio_from_youtube(url, target_dir):
 
 
 def transcribe_audio_file(audio_path):
+    """Transcribe an audio file and return its recognized text."""
     model = whisper.load_model('base')
     result = model.transcribe(audio_path)
     return result.get('text', '')
 
 
 def clean_markdown_json_response(raw_text):
+    """Remove optional Markdown code fences from a JSON response."""
     text = raw_text.strip()
     if text.startswith('```json'):
         text = text[7:]
@@ -39,6 +42,7 @@ def clean_markdown_json_response(raw_text):
 
 
 def generate_quiz_payload(transcript):
+    """Generate and parse quiz data from an audio transcript."""
     client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
     prompt = (
         "Based on the following transcript, generate a quiz in valid JSON format.\n"
@@ -71,6 +75,7 @@ def generate_quiz_payload(transcript):
 
 
 def save_quiz_record(user, url, quiz_data):
+    """Create and return a quiz record from generated quiz data."""
     return Quiz.objects.create(
         user=user,
         video_url=url,
@@ -80,6 +85,7 @@ def save_quiz_record(user, url, quiz_data):
 
 
 def save_quiz_questions(quiz, questions_data):
+    """Create question records for a quiz from generated question data."""
     for item in questions_data:
         Question.objects.create(
             quiz=quiz,
@@ -90,11 +96,13 @@ def save_quiz_questions(quiz, questions_data):
 
 
 def delete_file_safely(file_path):
+    """Remove the specified file if it exists."""
     if file_path and os.path.exists(file_path):
         os.remove(file_path)
 
 
 def process_youtube_quiz_creation(user, url):
+    """Create a quiz from a YouTube video and remove its temporary audio."""
     temp_dir = tempfile.gettempdir()
     audio_path = download_audio_from_youtube(url, temp_dir)
     try:
@@ -108,6 +116,7 @@ def process_youtube_quiz_creation(user, url):
 
 
 def get_user_quiz_or_status(quiz_id, user):
+    """Return a quiz owned by the user and its HTTP status code."""
     try:
         quiz = Quiz.objects.get(id=quiz_id)
     except Quiz.DoesNotExist:
