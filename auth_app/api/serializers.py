@@ -1,4 +1,4 @@
-"""Serializers for authentication handling registration, login, and user details."""
+"""Serializers for authentication handling registration and logins."""
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework import serializers
@@ -15,6 +15,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     """Validate registration payload and create new user instances."""
+
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -22,8 +23,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password', 'confirmed_password']
         extra_kwargs = {
             'password': {'write_only': True},
-            'email': {'required': True}
+            'email': {'required': True},
         }
+
+    def validate_email(self, value):
+        """Ensure email address is unique across registered users."""
+        if User.objects.filter(email__iexact=value.strip()).exists():
+            raise serializers.ValidationError('Email already in use.')
+        return value.strip().lower()
 
     def validate(self, attrs):
         """Verify that password and confirmation match."""
@@ -39,6 +46,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class LoginSerializer(serializers.Serializer):
     """Validate login credentials and authenticate user."""
+
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
@@ -46,7 +54,7 @@ class LoginSerializer(serializers.Serializer):
         """Authenticate user against provided credentials."""
         user = authenticate(
             username=attrs.get('username'),
-            password=attrs.get('password')
+            password=attrs.get('password'),
         )
         if not user:
             raise AuthenticationFailed('Invalid credentials.')
