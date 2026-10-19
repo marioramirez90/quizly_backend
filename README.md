@@ -2,7 +2,7 @@
 
 Quizly Backend is an AI-powered Django REST Framework service that automatically converts YouTube videos into interactive 10-question multiple-choice quizzes.
 
-Given a YouTube URL, the backend downloads the audio stream via `yt-dlp`, converts it with `FFmpeg`, transcribes the spoken speech locally using `OpenAI Whisper` (`base` model), and structures a validated ten-question quiz with four options and one correct answer using `Google Gemini 2.5 Flash`.
+Given a YouTube URL, the backend downloads the audio stream via `yt-dlp`, converts it with `FFmpeg`, transcribes the spoken speech locally using `OpenAI Whisper` (`base` model), and structures a validated ten-question quiz with four options and one correct answer using `Google Gemini 3.8 Flash`.
 
 ---
 
@@ -14,7 +14,8 @@ This guide enables teachers, evaluators, and developers to clone, run, and test 
 
 - **Python 3.12+** (or Python 3.14)
 - **Git**
-- **FFmpeg** installed and accessible in the system's `PATH`:
+- **FFmpeg** installed globally and accessible in the system's `PATH`:
+  > **Wichtig / Mandatory**: FFmpeg muss global installiert sein, da Whisper AI und `yt-dlp` dieses zwingend für die Umwandlung von YouTube-Videospuren in Audio-Streams benötigen.
   - **Windows (winget):**
     ```powershell
     winget install --id Gyan.FFmpeg -e --source winget
@@ -61,6 +62,7 @@ cp .env.example .env
 # DEBUG=True
 # ALLOWED_HOSTS=localhost,127.0.0.1
 # GEMINI_API_KEY=your-gemini-api-key-here
+# GEMINI_MODEL=gemini-3.8-flash
 
 # 5. Run database migrations
 python manage.py migrate
@@ -93,7 +95,7 @@ You can verify all technical requirements (Definition of Done) and test all API 
    ```bash
    python manage.py test
    ```
-   *(Result: 55 of 55 tests passed)*
+   *(Result: 57 of 57 tests passed)*
 
 3. **Check Test Coverage:**
    ```bash
@@ -215,11 +217,11 @@ Inspect `QuizAdmin` (includes `QuestionInline` to edit all 10 questions inside a
 | **API** | Django REST Framework 3.18 | RESTful API toolkit |
 | **Authentication** | SimpleJWT with Token Blacklist | JWT stored in HTTP-only cookies |
 | **Database** | SQLite (local dev) | Relational database (PostgreSQL-compatible) |
-| **AI Model** | Google Gemini 2.5 Flash (`google-genai`) | AI question and options generator |
-| **Speech-to-Text** | OpenAI Whisper (`base` model) | Local speech transcription |
-| **Audio Processing** | `yt-dlp` & FFmpeg | YouTube audio extraction and conversion |
-| **Testing** | Django Test Runner & Coverage | 55 automated unit/integration tests (99% coverage) |
-| **Linter** | Flake8 | Clean code validation ($\le 14$ lines per function) |
+| **AI Model** | [Google Gemini 3.8 Flash](https://github.com/googleapis/python-genai) (`google-genai`) | AI question and options generator |
+| **Speech-to-Text** | [OpenAI Whisper](https://github.com/openai/whisper) (`base` model) | Local speech transcription |
+| **Audio Processing** | [yt-dlp (v2025.07.21+)](https://github.com/yt-dlp/yt-dlp/tree/2025.07.21) & [FFmpeg](https://ffmpeg.org/) | YouTube audio extraction and conversion |
+| **Testing** | Django Test Runner & Coverage | 57 automated unit/integration tests (99% coverage) |
+| **Linter** | [Flake8 (PEP-8)](https://pep8.org/) | Clean code validation ($\le 14$ lines per function) |
 
 ---
 
@@ -233,11 +235,13 @@ All sensitive keys are managed via `.env` and loaded securely in [core/settings.
 | `DEBUG` | Enable/disable debug mode | `True` for dev, `False` for production |
 | `ALLOWED_HOSTS` | Allowed hostnames/IPs | `localhost,127.0.0.1` |
 | `GEMINI_API_KEY` | Google Gemini API key for AI generation | Your Gemini key from Google AI Studio |
+| `GEMINI_MODEL` | Gemini AI model name for quiz generation | `gemini-3.8-flash` (optional) |
 | `FRONTEND_URL` | Trusted frontend origin for CORS | `http://localhost:5173` |
 
 In `settings.py`:
 - `SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-fallback-key")`
 - `GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")`
+- `GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")`
 - `SIMPLE_JWT` uses `'SIGNING_KEY': SECRET_KEY` for cryptographically signing authentication tokens.
 
 ---
@@ -271,3 +275,24 @@ All routes are prefixed with `/api/`:
   - `serializers.py`: Data serialization, deserialization, and validation.
 - **Documentation**: Comprehensive docstrings on all modules, classes, and methods.
 - **Zero Orphaned Code**: No commented-out code blocks or orphan `print()` statements.
+
+---
+
+## Definition of Done (DoD) & Bewertungs-Checkliste
+
+| Kriterium | Vorgabe | Status |
+|:---|:---|:---:|
+| **Funktionslänge** | Alle Funktionen strictly $\le 14$ Zeilen | ✅ Erfüllt |
+| **Single Responsibility** | Jede Funktion erfüllt genau eine Aufgabe | ✅ Erfüllt |
+| **Namenskonventionen** | Durchgängig `snake_case` für Funktionen & Variablen | ✅ Erfüllt |
+| **Clean Code** | Keine ungenutzten Variablen/Imports, kein toter Code | ✅ Erfüllt |
+| **Dokumentation** | Docstrings auf allen Modulen, Klassen, Views & Funktionen | ✅ Erfüllt |
+| **README.md** | Vollständige Schnellstart- & Evaluierungsanleitung | ✅ Erfüllt |
+| **Dateitrennung** | `views.py` nur HTTP-Responses, Hilfslogik in `utils.py` | ✅ Erfüllt |
+| **Django Admin** | `QuizAdmin` (inkl. `QuestionInline`) & `QuestionAdmin` | ✅ Erfüllt |
+| **PEP-8 Style** | 0 Flake8-Fehler / 0 Warnungen | ✅ Erfüllt |
+| **Architektur** | REST-API mit getrenntem Frontend | ✅ Erfüllt |
+| **Authentifizierung** | JWT über HttpOnly-Cookies mit Token-Blacklisting | ✅ Erfüllt |
+| **Audio Pipeline** | `yt-dlp` + globales `FFmpeg` + lokales Whisper AI | ✅ Erfüllt |
+| **KI-Generierung** | Gemini Flash (10 Fragen mit je 4 Auswahloptionen) | ✅ Erfüllt |
+| **Testabdeckung** | Mindestens 95% Coverage gefordert | ✅ **99% erreicht (57 Tests)** |
