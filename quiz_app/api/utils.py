@@ -1,23 +1,61 @@
+"""Utility functions for audio processing, AI quiz generation, and data."""
+from datetime import timedelta
 import json
 import os
 import tempfile
+
+from django.utils import timezone
 from google import genai
 from google.genai import types
 import whisper
 import yt_dlp
+
 from quiz_app.models import Question, Quiz
+
+QUIZ_PROMPT_TEMPLATE = (
+    "Based on the following transcript, generate a quiz in JSON format.\n"
+    "The quiz must follow this exact structure:\n"
+    "{{\n"
+    '  "title": "Concise quiz title based on the transcript.",\n'
+    '  "description": "Short summary of the transcript (max 150 chars).",\n'
+    '  "questions": [\n'
+    "    {{\n"
+    '      "question_title": "The question text.",\n'
+    '      "question_options": [\n'
+    '        "Option A", "Option B", "Option C", "Option D"\n'
+    '      ],\n'
+    '      "answer": "The correct answer from question_options"\n'
+    "    }}\n"
+    "  ]\n"
+    "}}\n"
+    "Requirements:\n"
+    "- Generate exactly 10 questions.\n"
+    "- Each question must have exactly 4 distinct answer options.\n"
+    "- Only one correct answer per question, matching one option exactly.\n"
+    "- Output must be strictly valid JSON without markdown code blocks.\n\n"
+    "Transcript:\n{transcript}"
+)
+
+
+def get_yt_dlp_options(template):
+
+    """Return yt_dlp configuration dictionary for MP3 audio extraction."""
+    return {
+        'format': 'bestaudio/best',
+        'outtmpl': template,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+        }],
+        'quiet': True,
+    }
 
 
 def download_audio_from_youtube(url, target_dir):
-    """Download the audio track from a YouTube URL into the target directory."""
-    output_template = os.path.join(target_dir, '%(id)s.%(ext)s')
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': output_template,
-        'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
-        'quiet': True,
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    """Download audio track from a YouTube URL into target directory."""
+    template = os.path.join(target_dir, '%(id)s.%(ext)s')
+    opts = get_yt_dlp_options(template)
+    with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
         return os.path.join(target_dir, f"{info['id']}.mp3")
 
@@ -41,36 +79,21 @@ def clean_markdown_json_response(raw_text):
     return text.strip()
 
 
-def generate_quiz_payload(transcript):
-    """Generate and parse quiz data from an audio transcript."""
-    client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
-    prompt = (
-        "Based on the following transcript, generate a quiz in valid JSON format.\n"
-        "The quiz must follow this exact structure:\n"
-        "{\n"
-        '  "title": "Create a concise quiz title based on the topic of the transcript.",\n'
-        '  "description": "Summarize the transcript in no more than 150 characters. Do not include any quiz questions or answers.",\n'
-        '  "questions": [\n'
-        "    {\n"
-        '      "question_title": "The question goes here.",\n'
-        '      "question_options": ["Option A", "Option B", "Option C", "Option D"],\n'
-        '      "answer": "The correct answer from the above options"\n'
-        "    }\n"
-        "  ]\n"
-        "}\n"
-        "Requirements:\n"
-        "- Generate exactly 10 questions.\n"
-        "- Each question must have exactly 4 distinct answer options.\n"
-        "- Only one correct answer is allowed per question, and it must be present in 'question_options'.\n"
-        "- The output must be valid JSON and parsable as-is.\n"
-        "- Do not include explanations, comments, or any text outside the JSON.\n\n"
-        f"Transcript:\n{transcript}"
-    )
+def request_gemini_quiz_content(client, prompt):
+    """Send prompt to Gemini model and return response text."""
     config = types.GenerateContentConfig(response_mime_type="application/json")
     response = client.models.generate_content(
         model="gemini-2.5-flash", contents=prompt, config=config
     )
-    cleaned_json = clean_markdown_json_response(response.text)
+    return response.text
+
+
+def generate_quiz_payload(transcript):
+    """Generate and parse quiz data from an audio transcript."""
+    client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
+    prompt = QUIZ_PROMPT_TEMPLATE.format(transcript=transcript)
+    raw_response = request_gemini_quiz_content(client, prompt)
+    cleaned_json = clean_markdown_json_response(raw_response)
     return json.loads(cleaned_json)
 
 
@@ -80,7 +103,7 @@ def save_quiz_record(user, url, quiz_data):
         user=user,
         video_url=url,
         title=quiz_data.get('title', 'Neues Quiz'),
-        description=quiz_data.get('description', '')
+        description=quiz_data.get('description', ''),
     )
 
 
@@ -91,7 +114,7 @@ def save_quiz_questions(quiz, questions_data):
             quiz=quiz,
             question_title=item.get('question_title'),
             question_options=item.get('question_options', []),
-            answer=item.get('answer')
+            answer=item.get('answer'),
         )
 
 
@@ -124,3 +147,14 @@ def get_user_quiz_or_status(quiz_id, user):
     if quiz.user != user:
         return None, 403
     return quiz, 200
+
+
+def filter_user_quizzes(user, period=None):
+    """Return user quizzes optionally filtered by timeframe (today, 7days)."""
+    queryset = Quiz.objects.filter(user=user)
+    if period == 'today':
+        return queryset.filter(created_at__date=timezone.now().date())
+    if period in ('7days', 'last_7_days', 'week'):
+        start_date = timezone.now() - timedelta(days=7)
+        return queryset.filter(created_at__gte=start_date)
+    return queryset

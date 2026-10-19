@@ -1,4 +1,6 @@
+"""URL routing configuration for quiz endpoints."""
 from django.urls import path
+
 from .views import QuizDetailView, QuizListCreateView
 
 urlpatterns = [

@@ -1,0 +1,1 @@
+"""Quiz app API package."""

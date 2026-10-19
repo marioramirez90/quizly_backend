@@ -1,4 +1,6 @@
+"""Serializers for quiz and question data structures."""
 from rest_framework import serializers
+
 from quiz_app.models import Question, Quiz
 
 
