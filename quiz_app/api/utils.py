@@ -3,6 +3,8 @@ from datetime import timedelta
 import json
 import os
 import tempfile
+from urllib.parse import urlparse
+
 
 from django.utils import timezone
 from google import genai
@@ -158,3 +160,23 @@ def filter_user_quizzes(user, period=None):
         start_date = timezone.now() - timedelta(days=7)
         return queryset.filter(created_at__gte=start_date)
     return queryset
+
+
+def is_valid_youtube_url(url):
+    """Check if the provided string is a valid YouTube URL."""
+    if not isinstance(url, str) or not url.strip():
+        return False
+    parsed = urlparse(url.strip())
+    if not (parsed.scheme and parsed.netloc):
+        return False
+    netloc = parsed.netloc.lower()
+    domains = ('youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be')
+    return any(netloc == d or netloc.endswith('.' + d) for d in domains)
+
+
+def create_quiz_from_youtube_url(user, url):
+    """Create a quiz or return None and error message on failure."""
+    try:
+        return process_youtube_quiz_creation(user, url), None
+    except Exception as exc:
+        return None, str(exc)
