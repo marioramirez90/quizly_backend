@@ -6,9 +6,10 @@ from rest_framework.views import APIView
 
 from .serializers import QuizSerializer, QuizUpdateSerializer
 from .utils import (
+    create_quiz_from_youtube_url,
     filter_user_quizzes,
     get_user_quiz_or_status,
-    process_youtube_quiz_creation,
+    is_valid_youtube_url,
 )
 
 
@@ -27,17 +28,20 @@ class QuizListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         """Generate and persist a new quiz from a provided YouTube URL."""
         url = request.data.get('url')
-        if not url:
+        if not is_valid_youtube_url(url):
+            msg = {'detail': 'Ungültige URL oder Anfragedaten.'}
+            return Response(msg, status=status.HTTP_400_BAD_REQUEST)
+        quiz, err = create_quiz_from_youtube_url(request.user, url.strip())
+        if err:
             return Response(
-                {'detail': 'YouTube URL is required.'},
-                status=status.HTTP_400_BAD_REQUEST,
+                {'detail': err}, status=status.HTTP_400_BAD_REQUEST
             )
-        quiz = process_youtube_quiz_creation(request.user, url)
         serializer = self.get_serializer(quiz)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class QuizDetailView(APIView):
+
     """Retrieve, update, or delete a specific quiz owned by the user."""
 
     permission_classes = [IsAuthenticated]
