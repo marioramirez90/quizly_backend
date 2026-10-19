@@ -140,15 +140,16 @@ def process_youtube_quiz_creation(user, url):
         delete_file_safely(audio_path)
 
 
-def get_user_quiz_or_status(quiz_id, user):
-    """Return a quiz owned by the user and its HTTP status code."""
+def get_user_quiz_or_error(quiz_id, user):
+    """Return quiz owned by user, or (None, status_code, error_message)."""
     try:
         quiz = Quiz.objects.get(id=quiz_id)
     except Quiz.DoesNotExist:
-        return None, 404
+        return None, 404, 'Quiz nicht gefunden.'
     if quiz.user != user:
-        return None, 403
-    return quiz, 200
+        msg = 'Zugriff verweigert - Quiz gehört nicht dem Benutzer.'
+        return None, 403, msg
+    return quiz, 200, None
 
 
 def filter_user_quizzes(user, period=None):
