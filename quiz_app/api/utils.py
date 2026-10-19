@@ -2,6 +2,7 @@
 from datetime import timedelta
 import json
 import os
+import re
 import tempfile
 from urllib.parse import urlparse
 
@@ -131,12 +132,13 @@ def delete_file_safely(file_path):
 
 def process_youtube_quiz_creation(user, url):
     """Create a quiz from a YouTube video and remove its temporary audio."""
+    clean_url = normalize_youtube_url(url)
     temp_dir = tempfile.gettempdir()
-    audio_path = download_audio_from_youtube(url, temp_dir)
+    audio_path = download_audio_from_youtube(clean_url, temp_dir)
     try:
         transcript = transcribe_audio_file(audio_path)
         quiz_data = generate_quiz_payload(transcript)
-        quiz = save_quiz_record(user, url, quiz_data)
+        quiz = save_quiz_record(user, clean_url, quiz_data)
         save_quiz_questions(quiz, quiz_data.get('questions', []))
         return quiz
     finally:
@@ -166,6 +168,25 @@ def filter_user_quizzes(user, period=None):
     return queryset
 
 
+def extract_youtube_video_id(url):
+    """Extract 11-character YouTube video ID from supported URL patterns."""
+    if not isinstance(url, str):
+        return None
+    pattern = (
+        r'(?:v=|\/embed\/|\/shorts\/|\/live\/|youtu\.be\/)([a-zA-Z0-9_-]{11})'
+    )
+    match = re.search(pattern, url.strip())
+    return match.group(1) if match else None
+
+
+def normalize_youtube_url(url):
+    """Convert valid YouTube URL variants into standard watch URL."""
+    video_id = extract_youtube_video_id(url)
+    if video_id:
+        return f'https://www.youtube.com/watch?v={video_id}'
+    return url.strip() if isinstance(url, str) else url
+
+
 def is_valid_youtube_url(url):
     """Check if the provided string is a valid YouTube URL."""
     if not isinstance(url, str) or not url.strip():
@@ -175,7 +196,8 @@ def is_valid_youtube_url(url):
         return False
     netloc = parsed.netloc.lower()
     domains = ('youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be')
-    return any(netloc == d or netloc.endswith('.' + d) for d in domains)
+    valid = any(netloc == d or netloc.endswith('.' + d) for d in domains)
+    return valid and bool(extract_youtube_video_id(url))
 
 
 def create_quiz_from_youtube_url(user, url):
