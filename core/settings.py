@@ -12,6 +12,8 @@ DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1")
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -109,6 +111,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'SIGNING_KEY': SECRET_KEY,
 }
 
 CORS_ALLOWED_ORIGINS = [

@@ -6,6 +6,7 @@ import tempfile
 from urllib.parse import urlparse
 
 
+from django.conf import settings
 from django.utils import timezone
 from google import genai
 from google.genai import types
@@ -92,7 +93,8 @@ def request_gemini_quiz_content(client, prompt):
 
 def generate_quiz_payload(transcript):
     """Generate and parse quiz data from an audio transcript."""
-    client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
+    key = getattr(settings, 'GEMINI_API_KEY', None)
+    client = genai.Client(api_key=key or os.getenv('GEMINI_API_KEY'))
     prompt = QUIZ_PROMPT_TEMPLATE.format(transcript=transcript)
     raw_response = request_gemini_quiz_content(client, prompt)
     cleaned_json = clean_markdown_json_response(raw_response)
