@@ -13,6 +13,7 @@ DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1")
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 INSTALLED_APPS = [
     'django.contrib.admin',

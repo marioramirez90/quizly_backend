@@ -85,8 +85,9 @@ def clean_markdown_json_response(raw_text):
 def request_gemini_quiz_content(client, prompt):
     """Send prompt to Gemini model and return response text."""
     config = types.GenerateContentConfig(response_mime_type="application/json")
+    model = getattr(settings, 'GEMINI_MODEL', 'gemini-3.8-flash')
     response = client.models.generate_content(
-        model="gemini-2.5-flash", contents=prompt, config=config
+        model=model, contents=prompt, config=config
     )
     return response.text
 
