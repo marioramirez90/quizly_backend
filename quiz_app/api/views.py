@@ -8,7 +8,7 @@ from .serializers import QuizSerializer, QuizUpdateSerializer
 from .utils import (
     create_quiz_from_youtube_url,
     filter_user_quizzes,
-    get_user_quiz_or_status,
+    get_user_quiz_or_error,
     is_valid_youtube_url,
 )
 
@@ -41,23 +41,22 @@ class QuizListCreateView(generics.ListCreateAPIView):
 
 
 class QuizDetailView(APIView):
-
     """Retrieve, update, or delete a specific quiz owned by the user."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         """Retrieve a specific quiz by its primary key."""
-        quiz, code = get_user_quiz_or_status(pk, request.user)
-        if not quiz:
-            return Response({'detail': 'Not found or forbidden.'}, status=code)
+        quiz, code, err = get_user_quiz_or_error(pk, request.user)
+        if err:
+            return Response({'detail': err}, status=code)
         return Response(QuizSerializer(quiz).data, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
         """Update the title or description of a quiz."""
-        quiz, code = get_user_quiz_or_status(pk, request.user)
-        if not quiz:
-            return Response({'detail': 'Not found or forbidden.'}, status=code)
+        quiz, code, err = get_user_quiz_or_error(pk, request.user)
+        if err:
+            return Response({'detail': err}, status=code)
         serializer = QuizUpdateSerializer(
             quiz, data=request.data, partial=True
         )
@@ -67,8 +66,8 @@ class QuizDetailView(APIView):
 
     def delete(self, request, pk):
         """Delete an existing quiz owned by the current user."""
-        quiz, code = get_user_quiz_or_status(pk, request.user)
-        if not quiz:
-            return Response({'detail': 'Not found or forbidden.'}, status=code)
+        quiz, code, err = get_user_quiz_or_error(pk, request.user)
+        if err:
+            return Response({'detail': err}, status=code)
         quiz.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
