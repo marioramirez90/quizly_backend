@@ -28,7 +28,7 @@ This guide enables teachers, evaluators, and developers to clone, run, and test 
     ```bash
     sudo apt update && sudo apt install -y ffmpeg
     ```
-  - *Verify:* `ffmpeg -version`
+  - _Verify:_ `ffmpeg -version`
 - **Google Gemini API Key**: Get a free API key from [Google AI Studio](https://aistudio.google.com/).
 
 ---
@@ -53,9 +53,9 @@ pip install -r requirements.txt
 
 # 4. Set up environment variables
 # Windows PowerShell:
-Copy-Item .env.example .env
+Copy-Item .env.template .env
 # macOS / Linux:
-cp .env.example .env
+cp .env.template .env
 
 # Open .env and add your SECRET_KEY and GEMINI_API_KEY:
 # SECRET_KEY=your-django-secret-key-here
@@ -86,29 +86,35 @@ You can verify all technical requirements (Definition of Done) and test all API 
 #### A. Automated Quality & DoD Checks
 
 1. **Django System Check:**
+
    ```bash
    python manage.py check
    ```
-   *(Result: 0 issues)*
+
+   _(Result: 0 issues)_
 
 2. **Run Test Suite:**
+
    ```bash
    python manage.py test
    ```
-   *(Result: 57 of 57 tests passed)*
+
+   _(Result: 57 of 57 tests passed)_
 
 3. **Check Test Coverage:**
+
    ```bash
    coverage run --source='auth_app,quiz_app' manage.py test
    coverage report
    ```
-   *(Result: 99% coverage, strictly exceeding the $\ge 95\%$ requirement)*
+
+   _(Result: 99% coverage, strictly exceeding the $\ge 95\%$ requirement)_
 
 4. **Run PEP-8 Linter:**
    ```bash
    flake8 --exclude=.venv,migrations .
    ```
-   *(Result: 0 errors, 0 warnings. All functions strictly $\le 14$ lines)*
+   _(Result: 0 errors, 0 warnings. All functions strictly $\le 14$ lines)_
 
 ---
 
@@ -117,6 +123,7 @@ You can verify all technical requirements (Definition of Done) and test all API 
 With the server running on `http://127.0.0.1:8000/`, you can test all endpoints in order:
 
 ##### 1. Register User
+
 ```bash
 curl -X POST http://127.0.0.1:8000/api/register/ \
   -H "Content-Type: application/json" \
@@ -127,9 +134,11 @@ curl -X POST http://127.0.0.1:8000/api/register/ \
     "confirmed_password": "SecurePassword123!"
   }'
 ```
-*Expected: `201 Created` with `{"detail": "User created successfully!"}`*
+
+_Expected: `201 Created` with `{"detail": "User created successfully!"}`_
 
 ##### 2. Login (sets HttpOnly cookies)
+
 ```bash
 curl -X POST http://127.0.0.1:8000/api/login/ \
   -H "Content-Type: application/json" \
@@ -139,59 +148,75 @@ curl -X POST http://127.0.0.1:8000/api/login/ \
     "password": "SecurePassword123!"
   }'
 ```
-*Expected: `200 OK`, sets `access_token` and `refresh_token` in cookies.*
+
+_Expected: `200 OK`, sets `access_token` and `refresh_token` in cookies._
 
 ##### 3. Generate a Quiz from YouTube
+
 ```bash
 curl -X POST http://127.0.0.1:8000/api/quizzes/ \
   -b cookies.txt \
   -H "Content-Type: application/json" \
   -d '{"url": "https://www.youtube.com/watch?v=jNQXAC9IVRw"}'
 ```
-*Expected: `201 Created` with 10 generated questions, options, and answer.*
+
+_Expected: `201 Created` with 10 generated questions, options, and answer._
 
 ##### 4. List Quizzes
+
 ```bash
 curl -X GET http://127.0.0.1:8000/api/quizzes/ -b cookies.txt
 # Optional filter:
 curl -X GET "http://127.0.0.1:8000/api/quizzes/?period=today" -b cookies.txt
 ```
-*Expected: `200 OK` with list of user's quizzes.*
+
+_Expected: `200 OK` with list of user's quizzes._
 
 ##### 5. Get Quiz Details
+
 ```bash
 curl -X GET http://127.0.0.1:8000/api/quizzes/1/ -b cookies.txt
 ```
-*Expected: `200 OK` with quiz object, timestamps, video URL, and questions.*
+
+_Expected: `200 OK` with quiz object, timestamps, video URL, and questions._
 
 ##### 6. Update Quiz (Partial Update)
+
 ```bash
 curl -X PATCH http://127.0.0.1:8000/api/quizzes/1/ \
   -b cookies.txt \
   -H "Content-Type: application/json" \
   -d '{"title": "Updated Quiz Title", "description": "Updated Description"}'
 ```
-*Expected: `200 OK` with updated title/description.*
+
+_Expected: `200 OK` with updated title/description._
 
 ##### 7. Delete Quiz
+
 ```bash
 curl -X DELETE http://127.0.0.1:8000/api/quizzes/1/ -b cookies.txt
 ```
-*Expected: `204 No Content` (permanently deletes quiz and cascade-deletes its questions).*
+
+_Expected: `204 No Content` (permanently deletes quiz and cascade-deletes its questions)._
 
 ##### 8. Refresh Access Token
+
 ```bash
 curl -X POST http://127.0.0.1:8000/api/token/refresh/ -b cookies.txt
 ```
-*Expected: `200 OK` with renewed `access_token` cookie.*
+
+_Expected: `200 OK` with renewed `access_token` cookie._
 
 ##### 9. Logout
+
 ```bash
 curl -X POST http://127.0.0.1:8000/api/logout/ -b cookies.txt
 ```
-*Expected: `200 OK` with `{"detail": "Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid."}` and clears cookies.*
+
+_Expected: `200 OK` with `{"detail": "Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid."}` and clears cookies._
 
 ##### 10. Django Admin
+
 Visit `http://127.0.0.1:8000/admin/` with your superuser credentials.
 Inspect `QuizAdmin` (includes `QuestionInline` to edit all 10 questions inside a quiz) and standalone `QuestionAdmin`.
 
@@ -210,18 +235,18 @@ Inspect `QuizAdmin` (includes `QuestionInline` to edit all 10 questions inside a
 
 ## Tech Stack
 
-| Component | Technology | Description |
-|:---|:---|:---|
-| **Language** | Python 3.12+ / 3.14 | Core language |
-| **Framework** | Django 6.1 | Web application framework |
-| **API** | Django REST Framework 3.18 | RESTful API toolkit |
-| **Authentication** | SimpleJWT with Token Blacklist | JWT stored in HTTP-only cookies |
-| **Database** | SQLite (local dev) | Relational database (PostgreSQL-compatible) |
-| **AI Model** | [Google Gemini 3.8 Flash](https://github.com/googleapis/python-genai) (`google-genai`) | AI question and options generator |
-| **Speech-to-Text** | [OpenAI Whisper](https://github.com/openai/whisper) (`base` model) | Local speech transcription |
-| **Audio Processing** | [yt-dlp (v2025.07.21+)](https://github.com/yt-dlp/yt-dlp/tree/2025.07.21) & [FFmpeg](https://ffmpeg.org/) | YouTube audio extraction and conversion |
-| **Testing** | Django Test Runner & Coverage | 57 automated unit/integration tests (99% coverage) |
-| **Linter** | [Flake8 (PEP-8)](https://pep8.org/) | Clean code validation ($\le 14$ lines per function) |
+| Component            | Technology                                                                                                | Description                                         |
+| :------------------- | :-------------------------------------------------------------------------------------------------------- | :-------------------------------------------------- |
+| **Language**         | Python 3.12+ / 3.14                                                                                       | Core language                                       |
+| **Framework**        | Django 6.1                                                                                                | Web application framework                           |
+| **API**              | Django REST Framework 3.18                                                                                | RESTful API toolkit                                 |
+| **Authentication**   | SimpleJWT with Token Blacklist                                                                            | JWT stored in HTTP-only cookies                     |
+| **Database**         | SQLite (local dev)                                                                                        | Relational database (PostgreSQL-compatible)         |
+| **AI Model**         | [Google Gemini 3.8 Flash](https://github.com/googleapis/python-genai) (`google-genai`)                    | AI question and options generator                   |
+| **Speech-to-Text**   | [OpenAI Whisper](https://github.com/openai/whisper) (`base` model)                                        | Local speech transcription                          |
+| **Audio Processing** | [yt-dlp (v2025.07.21+)](https://github.com/yt-dlp/yt-dlp/tree/2025.07.21) & [FFmpeg](https://ffmpeg.org/) | YouTube audio extraction and conversion             |
+| **Testing**          | Django Test Runner & Coverage                                                                             | 57 automated unit/integration tests (99% coverage)  |
+| **Linter**           | [Flake8 (PEP-8)](https://pep8.org/)                                                                       | Clean code validation ($\le 14$ lines per function) |
 
 ---
 
@@ -229,16 +254,17 @@ Inspect `QuizAdmin` (includes `QuestionInline` to edit all 10 questions inside a
 
 All sensitive keys are managed via `.env` and loaded securely in [core/settings.py](file:///c:/Users/mario/Desktop/quizly_backend/core/settings.py):
 
-| Variable | Description | Default / Example |
-|:---|:---|:---|
-| `SECRET_KEY` | Django cryptographic signing key | `django-insecure-...` (override in `.env`) |
-| `DEBUG` | Enable/disable debug mode | `True` for dev, `False` for production |
-| `ALLOWED_HOSTS` | Allowed hostnames/IPs | `localhost,127.0.0.1` |
-| `GEMINI_API_KEY` | Google Gemini API key for AI generation | Your Gemini key from Google AI Studio |
-| `GEMINI_MODEL` | Gemini AI model name for quiz generation | `gemini-3.8-flash` (optional) |
-| `FRONTEND_URL` | Trusted frontend origin for CORS | `http://localhost:5173` |
+| Variable         | Description                              | Default / Example                          |
+| :--------------- | :--------------------------------------- | :----------------------------------------- |
+| `SECRET_KEY`     | Django cryptographic signing key         | `django-insecure-...` (override in `.env`) |
+| `DEBUG`          | Enable/disable debug mode                | `True` for dev, `False` for production     |
+| `ALLOWED_HOSTS`  | Allowed hostnames/IPs                    | `localhost,127.0.0.1`                      |
+| `GEMINI_API_KEY` | Google Gemini API key for AI generation  | Your Gemini key from Google AI Studio      |
+| `GEMINI_MODEL`   | Gemini AI model name for quiz generation | `gemini-3.8-flash` (optional)              |
+| `FRONTEND_URL`   | Trusted frontend origin for CORS         | `http://localhost:5173`                    |
 
 In `settings.py`:
+
 - `SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-fallback-key")`
 - `GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")`
 - `GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")`
@@ -250,17 +276,17 @@ In `settings.py`:
 
 All routes are prefixed with `/api/`:
 
-| Method | Endpoint | Description | Auth Required |
-|:---|:---|:---|:---|
-| `POST` | `/api/register/` | Register user (`username`, `email`, `password`, `confirmed_password`) | No |
-| `POST` | `/api/login/` | Log in and receive HTTP-only authentication cookies | No |
-| `POST` | `/api/token/refresh/` | Refresh the access token using the refresh cookie | No |
-| `POST` | `/api/logout/` | Log out, blacklist the refresh token, and clear cookies | Yes |
-| `GET` | `/api/quizzes/` | List quizzes belonging to authenticated user (`?period=today`, `?period=7days`) | Yes |
-| `POST` | `/api/quizzes/` | Generate a new quiz from a YouTube video URL | Yes |
-| `GET` | `/api/quizzes/<id>/` | Retrieve a specific quiz owned by the user | Yes |
-| `PATCH` | `/api/quizzes/<id>/` | Partially update quiz metadata (`title`, `description`) | Yes |
-| `DELETE` | `/api/quizzes/<id>/` | Delete a quiz and all associated questions | Yes |
+| Method   | Endpoint              | Description                                                                     | Auth Required |
+| :------- | :-------------------- | :------------------------------------------------------------------------------ | :------------ |
+| `POST`   | `/api/register/`      | Register user (`username`, `email`, `password`, `confirmed_password`)           | No            |
+| `POST`   | `/api/login/`         | Log in and receive HTTP-only authentication cookies                             | No            |
+| `POST`   | `/api/token/refresh/` | Refresh the access token using the refresh cookie                               | No            |
+| `POST`   | `/api/logout/`        | Log out, blacklist the refresh token, and clear cookies                         | Yes           |
+| `GET`    | `/api/quizzes/`       | List quizzes belonging to authenticated user (`?period=today`, `?period=7days`) | Yes           |
+| `POST`   | `/api/quizzes/`       | Generate a new quiz from a YouTube video URL                                    | Yes           |
+| `GET`    | `/api/quizzes/<id>/`  | Retrieve a specific quiz owned by the user                                      | Yes           |
+| `PATCH`  | `/api/quizzes/<id>/`  | Partially update quiz metadata (`title`, `description`)                         | Yes           |
+| `DELETE` | `/api/quizzes/<id>/`  | Delete a quiz and all associated questions                                      | Yes           |
 
 ---
 
@@ -277,22 +303,3 @@ All routes are prefixed with `/api/`:
 - **Zero Orphaned Code**: No commented-out code blocks or orphan `print()` statements.
 
 ---
-
-## Definition of Done (DoD) & Bewertungs-Checkliste
-
-| Kriterium | Vorgabe | Status |
-|:---|:---|:---:|
-| **Funktionslänge** | Alle Funktionen strictly $\le 14$ Zeilen | ✅ Erfüllt |
-| **Single Responsibility** | Jede Funktion erfüllt genau eine Aufgabe | ✅ Erfüllt |
-| **Namenskonventionen** | Durchgängig `snake_case` für Funktionen & Variablen | ✅ Erfüllt |
-| **Clean Code** | Keine ungenutzten Variablen/Imports, kein toter Code | ✅ Erfüllt |
-| **Dokumentation** | Docstrings auf allen Modulen, Klassen, Views & Funktionen | ✅ Erfüllt |
-| **README.md** | Vollständige Schnellstart- & Evaluierungsanleitung | ✅ Erfüllt |
-| **Dateitrennung** | `views.py` nur HTTP-Responses, Hilfslogik in `utils.py` | ✅ Erfüllt |
-| **Django Admin** | `QuizAdmin` (inkl. `QuestionInline`) & `QuestionAdmin` | ✅ Erfüllt |
-| **PEP-8 Style** | 0 Flake8-Fehler / 0 Warnungen | ✅ Erfüllt |
-| **Architektur** | REST-API mit getrenntem Frontend | ✅ Erfüllt |
-| **Authentifizierung** | JWT über HttpOnly-Cookies mit Token-Blacklisting | ✅ Erfüllt |
-| **Audio Pipeline** | `yt-dlp` + globales `FFmpeg` + lokales Whisper AI | ✅ Erfüllt |
-| **KI-Generierung** | Gemini Flash (10 Fragen mit je 4 Auswahloptionen) | ✅ Erfüllt |
-| **Testabdeckung** | Mindestens 95% Coverage gefordert | ✅ **99% erreicht (57 Tests)** |
