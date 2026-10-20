@@ -6,16 +6,16 @@ Given a YouTube URL, the backend downloads the audio stream via `yt-dlp`, conver
 
 ---
 
-## Quickstart for Local Setup & Evaluation
+## Quickstart & Local Setup
 
-This guide enables teachers, evaluators, and developers to clone, run, and test all functions of the backend immediately.
+This guide provides step-by-step instructions to clone, configure, run, and test the backend service locally.
 
 ### 1. Prerequisites
 
 - **Python 3.12+** (or Python 3.14)
 - **Git**
 - **FFmpeg** installed globally and accessible in the system's `PATH`:
-  > **Wichtig / Mandatory**: FFmpeg muss global installiert sein, da Whisper AI und `yt-dlp` dieses zwingend für die Umwandlung von YouTube-Videospuren in Audio-Streams benötigen.
+  > **Important**: FFmpeg must be installed globally and accessible in your system's `PATH`, as Whisper AI and `yt-dlp` require it to convert YouTube video tracks into audio streams.
   - **Windows (winget):**
     ```powershell
     winget install --id Gyan.FFmpeg -e --source winget
@@ -79,11 +79,9 @@ python manage.py runserver
 
 ---
 
-### 3. Quick Testing Guide for Examiners (Dozenten-Prüfungsanleitung)
+### 3. Automated Tests & Quality Checks
 
-You can verify all technical requirements (Definition of Done) and test all API features directly:
-
-#### A. Automated Quality & DoD Checks
+Run the automated test suite, verify code coverage, and check code formatting:
 
 1. **Django System Check:**
 
@@ -99,7 +97,7 @@ You can verify all technical requirements (Definition of Done) and test all API 
    python manage.py test
    ```
 
-   _(Result: 57 of 57 tests passed)_
+   _(Result: 57 unit and integration tests passing)_
 
 3. **Check Test Coverage:**
 
@@ -108,17 +106,19 @@ You can verify all technical requirements (Definition of Done) and test all API 
    coverage report
    ```
 
-   _(Result: 99% coverage, strictly exceeding the $\ge 95\%$ requirement)_
+   _(Result: 99% test coverage across core applications)_
 
 4. **Run PEP-8 Linter:**
+
    ```bash
    flake8 --exclude=.venv,migrations .
    ```
-   _(Result: 0 errors, 0 warnings. All functions strictly $\le 14$ lines)_
+
+   _(Result: 0 errors, 0 warnings. Full PEP-8 compliance)_
 
 ---
 
-#### B. Manual API Endpoint Walkthrough (cURL / REST Client)
+### 4. API Walkthrough (cURL Examples)
 
 With the server running on `http://127.0.0.1:8000/`, you can test all endpoints in order:
 
@@ -128,8 +128,8 @@ With the server running on `http://127.0.0.1:8000/`, you can test all endpoints 
 curl -X POST http://127.0.0.1:8000/api/register/ \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "teacher_test",
-    "email": "teacher@example.com",
+    "username": "demo_user",
+    "email": "demo@example.com",
     "password": "SecurePassword123!",
     "confirmed_password": "SecurePassword123!"
   }'
@@ -144,7 +144,7 @@ curl -X POST http://127.0.0.1:8000/api/login/ \
   -H "Content-Type: application/json" \
   -c cookies.txt \
   -d '{
-    "username": "teacher_test",
+    "username": "demo_user",
     "password": "SecurePassword123!"
   }'
 ```
@@ -229,7 +229,7 @@ Inspect `QuizAdmin` (includes `QuestionInline` to edit all 10 questions inside a
 - **Server-Side Token Blacklisting**: Blacklists refresh tokens upon logout using `rest_framework_simplejwt.token_blacklist`.
 - **Owner-Based Access Control**: Strict multi-user isolation; users can only access their own quizzes (`403 Forbidden` / `404 Not Found`).
 - **Comprehensive Admin Panel**: Inline editing of all questions linked to a quiz and standalone question management.
-- **Clean Architecture & 100% DoD Compliance**: All functions $\le 14$ lines, Single Responsibility Principle, 0 Flake8 errors, 99% test coverage.
+- **Clean Architecture & Quality Standards**: Modular design adhering to the Single Responsibility Principle, concise functions ($\le 14$ lines), 0 Flake8 errors, and 99% test coverage.
 
 ---
 
@@ -250,9 +250,9 @@ Inspect `QuizAdmin` (includes `QuestionInline` to edit all 10 questions inside a
 
 ---
 
-## Environment Variables & Keys (`settings.py`)
+## Environment Variables & Configuration
 
-All sensitive keys are managed via `.env` and loaded securely in [core/settings.py](file:///c:/Users/mario/Desktop/quizly_backend/core/settings.py):
+All sensitive configuration keys are managed via `.env` (using `.env.template` as a starting point) and loaded securely in `core/settings.py`:
 
 | Variable         | Description                              | Default / Example                          |
 | :--------------- | :--------------------------------------- | :----------------------------------------- |
@@ -292,7 +292,7 @@ All routes are prefixed with `/api/`:
 
 ## Code Conventions & Clean Code Standards
 
-- **Maximum Function Length**: Every function and method is strictly **$\le 14$ lines long**.
+- **Concise Function Design**: Every function and method is kept strictly **$\le 14$ lines long** for clarity and maintainability.
 - **Single Responsibility Principle**: Every function performs exactly one specific task.
 - **Naming Conventions**: Strict `snake_case` for functions/variables and `PascalCase` for classes.
 - **Clean Architecture**:
@@ -301,5 +301,3 @@ All routes are prefixed with `/api/`:
   - `serializers.py`: Data serialization, deserialization, and validation.
 - **Documentation**: Comprehensive docstrings on all modules, classes, and methods.
 - **Zero Orphaned Code**: No commented-out code blocks or orphan `print()` statements.
-
----
